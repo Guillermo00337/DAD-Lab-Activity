@@ -54,16 +54,26 @@ This repository contains the initial application structure for a campus equipmen
 
 ```text
 EquipmentBorrowing/
-|
-+-- README.md
-+-- EquipmentBorrowing.sln
-+-- src/
-|   +-- EquipmentBorrowing.Domain/
-|   +-- EquipmentBorrowing.Application/
-|   +-- EquipmentBorrowing.Infrastructure/
-|   +-- EquipmentBorrowing.Console/
-+-- tests/
-    +-- EquipmentBorrowing.Tests/
+│
+├── README.md
+├── EquipmentBorrowing.sln
+│
+├── src/
+│   ├── EquipmentBorrowing.Domain/
+│   │   ├── Student.cs
+│   │   ├── Equipment.cs
+│   │   ├── Borrowing.cs
+│   │   └── BorrowingStatus.cs
+│   │
+│   ├── EquipmentBorrowing.Application/
+│   │   ├── Interfaces/
+│   │   └── Services/
+│   │
+│   └── EquipmentBorrowing.Infrastructure/
+│       └── Repositories/
+│
+└── tests/
+    └── EquipmentBorrowing.Tests/
 ```
 
 ### Domain
