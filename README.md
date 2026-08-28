@@ -105,9 +105,9 @@ Contains the initial test project structure. More tests can be added later for d
 ```text
 Console Demo / Future UI
         |
-        v
+        ↓
 Application ----> Domain
-        ^
+        ↑
         |
 Infrastructure
 ```
