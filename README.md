@@ -165,17 +165,3 @@ dotnet run --project src/EquipmentBorrowing.Console/EquipmentBorrowing.Console.c
 ```
 
 The console program demonstrates one successful borrowing request and one failed request where a student is not allowed to borrow equipment.
-
-## Suggested Git Commits
-
-Git was not available in the current environment, but the recommended commit history is:
-
-```text
-Initial solution structure
-Add domain models
-Add repository abstractions
-Implement borrowing service
-Add in-memory repositories
-Add borrowing demonstration
-Complete architecture documentation
-```
