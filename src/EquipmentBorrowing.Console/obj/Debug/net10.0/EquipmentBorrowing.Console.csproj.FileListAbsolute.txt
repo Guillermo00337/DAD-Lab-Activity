@@ -1,0 +1,44 @@
+C:\Users\Guillermo\Documents\Codex\2026-08-28\files-pasted-by-the-user-i\work\EquipmentBorrowing\src\EquipmentBorrowing.Console\bin\Debug\net10.0\EquipmentBorrowing.Console.exe
+C:\Users\Guillermo\Documents\Codex\2026-08-28\files-pasted-by-the-user-i\work\EquipmentBorrowing\src\EquipmentBorrowing.Console\bin\Debug\net10.0\EquipmentBorrowing.Console.deps.json
+C:\Users\Guillermo\Documents\Codex\2026-08-28\files-pasted-by-the-user-i\work\EquipmentBorrowing\src\EquipmentBorrowing.Console\bin\Debug\net10.0\EquipmentBorrowing.Console.runtimeconfig.json
+C:\Users\Guillermo\Documents\Codex\2026-08-28\files-pasted-by-the-user-i\work\EquipmentBorrowing\src\EquipmentBorrowing.Console\bin\Debug\net10.0\EquipmentBorrowing.Console.dll
+C:\Users\Guillermo\Documents\Codex\2026-08-28\files-pasted-by-the-user-i\work\EquipmentBorrowing\src\EquipmentBorrowing.Console\bin\Debug\net10.0\EquipmentBorrowing.Console.pdb
+C:\Users\Guillermo\Documents\Codex\2026-08-28\files-pasted-by-the-user-i\work\EquipmentBorrowing\src\EquipmentBorrowing.Console\bin\Debug\net10.0\EquipmentBorrowing.Application.dll
+C:\Users\Guillermo\Documents\Codex\2026-08-28\files-pasted-by-the-user-i\work\EquipmentBorrowing\src\EquipmentBorrowing.Console\bin\Debug\net10.0\EquipmentBorrowing.Domain.dll
+C:\Users\Guillermo\Documents\Codex\2026-08-28\files-pasted-by-the-user-i\work\EquipmentBorrowing\src\EquipmentBorrowing.Console\bin\Debug\net10.0\EquipmentBorrowing.Infrastructure.dll
+C:\Users\Guillermo\Documents\Codex\2026-08-28\files-pasted-by-the-user-i\work\EquipmentBorrowing\src\EquipmentBorrowing.Console\bin\Debug\net10.0\EquipmentBorrowing.Application.pdb
+C:\Users\Guillermo\Documents\Codex\2026-08-28\files-pasted-by-the-user-i\work\EquipmentBorrowing\src\EquipmentBorrowing.Console\bin\Debug\net10.0\EquipmentBorrowing.Domain.pdb
+C:\Users\Guillermo\Documents\Codex\2026-08-28\files-pasted-by-the-user-i\work\EquipmentBorrowing\src\EquipmentBorrowing.Console\bin\Debug\net10.0\EquipmentBorrowing.Infrastructure.pdb
+C:\Users\Guillermo\Documents\Codex\2026-08-28\files-pasted-by-the-user-i\work\EquipmentBorrowing\src\EquipmentBorrowing.Console\obj\Debug\net10.0\EquipmentBorrowing.Console.csproj.AssemblyReference.cache
+C:\Users\Guillermo\Documents\Codex\2026-08-28\files-pasted-by-the-user-i\work\EquipmentBorrowing\src\EquipmentBorrowing.Console\obj\Debug\net10.0\EquipmentBorrowing.Console.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\Guillermo\Documents\Codex\2026-08-28\files-pasted-by-the-user-i\work\EquipmentBorrowing\src\EquipmentBorrowing.Console\obj\Debug\net10.0\EquipmentBorrowing.Console.AssemblyInfoInputs.cache
+C:\Users\Guillermo\Documents\Codex\2026-08-28\files-pasted-by-the-user-i\work\EquipmentBorrowing\src\EquipmentBorrowing.Console\obj\Debug\net10.0\EquipmentBorrowing.Console.AssemblyInfo.cs
+C:\Users\Guillermo\Documents\Codex\2026-08-28\files-pasted-by-the-user-i\work\EquipmentBorrowing\src\EquipmentBorrowing.Console\obj\Debug\net10.0\EquipmentBorrowing.Console.csproj.CoreCompileInputs.cache
+C:\Users\Guillermo\Documents\Codex\2026-08-28\files-pasted-by-the-user-i\work\EquipmentBorrowing\src\EquipmentBorrowing.Console\obj\Debug\net10.0\Equipmen.4D16BA61.Up2Date
+C:\Users\Guillermo\Documents\Codex\2026-08-28\files-pasted-by-the-user-i\work\EquipmentBorrowing\src\EquipmentBorrowing.Console\obj\Debug\net10.0\EquipmentBorrowing.Console.dll
+C:\Users\Guillermo\Documents\Codex\2026-08-28\files-pasted-by-the-user-i\work\EquipmentBorrowing\src\EquipmentBorrowing.Console\obj\Debug\net10.0\refint\EquipmentBorrowing.Console.dll
+C:\Users\Guillermo\Documents\Codex\2026-08-28\files-pasted-by-the-user-i\work\EquipmentBorrowing\src\EquipmentBorrowing.Console\obj\Debug\net10.0\EquipmentBorrowing.Console.pdb
+C:\Users\Guillermo\Documents\Codex\2026-08-28\files-pasted-by-the-user-i\work\EquipmentBorrowing\src\EquipmentBorrowing.Console\obj\Debug\net10.0\EquipmentBorrowing.Console.genruntimeconfig.cache
+C:\Users\Guillermo\Documents\Codex\2026-08-28\files-pasted-by-the-user-i\work\EquipmentBorrowing\src\EquipmentBorrowing.Console\obj\Debug\net10.0\ref\EquipmentBorrowing.Console.dll
+C:\Users\Guillermo\Downloads\Act 1 DAD\EquipmentBorrowing\src\EquipmentBorrowing.Console\bin\Debug\net10.0\EquipmentBorrowing.Console.exe
+C:\Users\Guillermo\Downloads\Act 1 DAD\EquipmentBorrowing\src\EquipmentBorrowing.Console\bin\Debug\net10.0\EquipmentBorrowing.Console.deps.json
+C:\Users\Guillermo\Downloads\Act 1 DAD\EquipmentBorrowing\src\EquipmentBorrowing.Console\bin\Debug\net10.0\EquipmentBorrowing.Console.runtimeconfig.json
+C:\Users\Guillermo\Downloads\Act 1 DAD\EquipmentBorrowing\src\EquipmentBorrowing.Console\bin\Debug\net10.0\EquipmentBorrowing.Console.dll
+C:\Users\Guillermo\Downloads\Act 1 DAD\EquipmentBorrowing\src\EquipmentBorrowing.Console\bin\Debug\net10.0\EquipmentBorrowing.Console.pdb
+C:\Users\Guillermo\Downloads\Act 1 DAD\EquipmentBorrowing\src\EquipmentBorrowing.Console\bin\Debug\net10.0\EquipmentBorrowing.Application.dll
+C:\Users\Guillermo\Downloads\Act 1 DAD\EquipmentBorrowing\src\EquipmentBorrowing.Console\bin\Debug\net10.0\EquipmentBorrowing.Domain.dll
+C:\Users\Guillermo\Downloads\Act 1 DAD\EquipmentBorrowing\src\EquipmentBorrowing.Console\bin\Debug\net10.0\EquipmentBorrowing.Infrastructure.dll
+C:\Users\Guillermo\Downloads\Act 1 DAD\EquipmentBorrowing\src\EquipmentBorrowing.Console\bin\Debug\net10.0\EquipmentBorrowing.Application.pdb
+C:\Users\Guillermo\Downloads\Act 1 DAD\EquipmentBorrowing\src\EquipmentBorrowing.Console\bin\Debug\net10.0\EquipmentBorrowing.Domain.pdb
+C:\Users\Guillermo\Downloads\Act 1 DAD\EquipmentBorrowing\src\EquipmentBorrowing.Console\bin\Debug\net10.0\EquipmentBorrowing.Infrastructure.pdb
+C:\Users\Guillermo\Downloads\Act 1 DAD\EquipmentBorrowing\src\EquipmentBorrowing.Console\obj\Debug\net10.0\EquipmentBorrowing.Console.csproj.AssemblyReference.cache
+C:\Users\Guillermo\Downloads\Act 1 DAD\EquipmentBorrowing\src\EquipmentBorrowing.Console\obj\Debug\net10.0\EquipmentBorrowing.Console.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\Guillermo\Downloads\Act 1 DAD\EquipmentBorrowing\src\EquipmentBorrowing.Console\obj\Debug\net10.0\EquipmentBorrowing.Console.AssemblyInfoInputs.cache
+C:\Users\Guillermo\Downloads\Act 1 DAD\EquipmentBorrowing\src\EquipmentBorrowing.Console\obj\Debug\net10.0\EquipmentBorrowing.Console.AssemblyInfo.cs
+C:\Users\Guillermo\Downloads\Act 1 DAD\EquipmentBorrowing\src\EquipmentBorrowing.Console\obj\Debug\net10.0\EquipmentBorrowing.Console.csproj.CoreCompileInputs.cache
+C:\Users\Guillermo\Downloads\Act 1 DAD\EquipmentBorrowing\src\EquipmentBorrowing.Console\obj\Debug\net10.0\Equipmen.4D16BA61.Up2Date
+C:\Users\Guillermo\Downloads\Act 1 DAD\EquipmentBorrowing\src\EquipmentBorrowing.Console\obj\Debug\net10.0\EquipmentBorrowing.Console.dll
+C:\Users\Guillermo\Downloads\Act 1 DAD\EquipmentBorrowing\src\EquipmentBorrowing.Console\obj\Debug\net10.0\refint\EquipmentBorrowing.Console.dll
+C:\Users\Guillermo\Downloads\Act 1 DAD\EquipmentBorrowing\src\EquipmentBorrowing.Console\obj\Debug\net10.0\EquipmentBorrowing.Console.pdb
+C:\Users\Guillermo\Downloads\Act 1 DAD\EquipmentBorrowing\src\EquipmentBorrowing.Console\obj\Debug\net10.0\EquipmentBorrowing.Console.genruntimeconfig.cache
+C:\Users\Guillermo\Downloads\Act 1 DAD\EquipmentBorrowing\src\EquipmentBorrowing.Console\obj\Debug\net10.0\ref\EquipmentBorrowing.Console.dll
