@@ -1,0 +1,65 @@
+<UserControl
+    x:Class="EquipmentBorrowing.Desktop.Views.EquipmentView"
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:domain="using:EquipmentBorrowing.Domain"
+    xmlns:vm="using:EquipmentBorrowing.Desktop.ViewModels"
+    x:DataType="vm:EquipmentViewModel">
+
+  <UserControl.DataTemplates>
+    <DataTemplate DataType="domain:Student">
+      <TextBlock Text="{Binding FullName}" />
+    </DataTemplate>
+    <DataTemplate DataType="domain:Equipment">
+      <Grid ColumnDefinitions="90,*,130" Margin="0,4">
+        <TextBlock Text="{Binding AssetTag}" />
+        <TextBlock Grid.Column="1" Text="{Binding Name}" />
+        <TextBlock Grid.Column="2" Text="{Binding IsAvailable, StringFormat='Available: {0}'}" />
+      </Grid>
+    </DataTemplate>
+  </UserControl.DataTemplates>
+
+  <Grid RowDefinitions="Auto,*" RowSpacing="14">
+    <StackPanel Spacing="4">
+      <TextBlock Classes="SectionHeading" Text="Equipment" />
+      <TextBlock Text="Borrow available laboratory equipment using the existing application service." />
+    </StackPanel>
+
+    <Grid Grid.Row="1" ColumnDefinitions="*,340" ColumnSpacing="16">
+      <Border Classes="Panel">
+        <DockPanel LastChildFill="True">
+          <TextBlock DockPanel.Dock="Top" Classes="Label" Text="Equipment List" />
+          <ListBox
+              Margin="0,10,0,0"
+              ItemsSource="{Binding EquipmentItems}"
+              SelectedItem="{Binding SelectedEquipment}" />
+        </DockPanel>
+      </Border>
+
+      <Border Grid.Column="1" Classes="Panel">
+        <StackPanel Spacing="12">
+          <TextBlock Classes="Label" Text="Borrow Equipment" />
+
+          <TextBlock Text="Student" />
+          <ComboBox
+              ItemsSource="{Binding Students}"
+              SelectedItem="{Binding SelectedStudent}" />
+
+          <TextBlock Text="Selected Equipment" />
+          <TextBlock
+              FontWeight="SemiBold"
+              Text="{Binding SelectedEquipment.Name, FallbackValue='No equipment selected'}" />
+
+          <TextBlock Text="Expected Return Date" />
+          <DatePicker SelectedDate="{Binding ExpectedReturnDate}" />
+
+          <Button
+              Command="{Binding BorrowCommand}"
+              Content="Borrow Equipment" />
+
+          <TextBlock Classes="Status" Text="{Binding StatusMessage}" />
+        </StackPanel>
+      </Border>
+    </Grid>
+  </Grid>
+</UserControl>

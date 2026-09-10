@@ -1,0 +1,59 @@
+<UserControl
+    x:Class="EquipmentBorrowing.Desktop.Views.BorrowingsView"
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:services="using:EquipmentBorrowing.Application.Services"
+    xmlns:vm="using:EquipmentBorrowing.Desktop.ViewModels"
+    x:DataType="vm:BorrowingsViewModel">
+
+  <UserControl.DataTemplates>
+    <DataTemplate DataType="services:ActiveBorrowingDetails">
+      <Grid ColumnDefinitions="*,*,120,140" Margin="0,4">
+        <TextBlock Text="{Binding StudentName}" />
+        <TextBlock Grid.Column="1" Text="{Binding EquipmentName}" />
+        <TextBlock Grid.Column="2" Text="{Binding DateBorrowed}" />
+        <TextBlock Grid.Column="3" Text="{Binding ExpectedReturnDate}" />
+      </Grid>
+    </DataTemplate>
+  </UserControl.DataTemplates>
+
+  <Grid RowDefinitions="Auto,*" RowSpacing="14">
+    <StackPanel Spacing="4">
+      <TextBlock Classes="SectionHeading" Text="Active Borrowings" />
+      <TextBlock Text="Return borrowed equipment through the application layer." />
+    </StackPanel>
+
+    <Grid Grid.Row="1" ColumnDefinitions="*,300" ColumnSpacing="16">
+      <Border Classes="Panel">
+        <DockPanel LastChildFill="True">
+          <TextBlock DockPanel.Dock="Top" Classes="Label" Text="Currently Borrowed" />
+          <ListBox
+              Margin="0,10,0,0"
+              ItemsSource="{Binding ActiveBorrowings}"
+              SelectedItem="{Binding SelectedBorrowing}" />
+        </DockPanel>
+      </Border>
+
+      <Border Grid.Column="1" Classes="Panel">
+        <StackPanel Spacing="12">
+          <TextBlock Classes="Label" Text="Return Equipment" />
+
+          <TextBlock Text="Selected Borrowing" />
+          <TextBlock
+              FontWeight="SemiBold"
+              Text="{Binding SelectedBorrowing.EquipmentName, FallbackValue='No borrowing selected'}" />
+
+          <Button
+              Command="{Binding ReturnSelectedCommand}"
+              Content="Return Equipment" />
+
+          <Button
+              Command="{Binding LoadCommand}"
+              Content="Refresh" />
+
+          <TextBlock Classes="Status" Text="{Binding StatusMessage}" />
+        </StackPanel>
+      </Border>
+    </Grid>
+  </Grid>
+</UserControl>
