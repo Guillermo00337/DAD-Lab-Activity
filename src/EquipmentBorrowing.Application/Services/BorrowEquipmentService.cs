@@ -60,9 +60,9 @@ public sealed class BorrowEquipmentService
 
         equipment.MarkBorrowed();
 
-        await _borrowingRepository.AddAsync(borrowing, cancellationToken);
+        Borrowing storedBorrowing = await _borrowingRepository.AddAsync(borrowing, cancellationToken);
         await _equipmentRepository.UpdateAsync(equipment, cancellationToken);
 
-        return BorrowEquipmentResult.Success(borrowing);
+        return BorrowEquipmentResult.Success(storedBorrowing);
     }
 }

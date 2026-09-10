@@ -17,7 +17,22 @@ public sealed class InMemoryBorrowingRepository : IBorrowingRepository
         return Task.FromResult(count);
     }
 
-    public Task AddAsync(Borrowing borrowing, CancellationToken cancellationToken = default)
+    public Task<IReadOnlyList<Borrowing>> GetActiveAsync(CancellationToken cancellationToken = default)
+    {
+        IReadOnlyList<Borrowing> activeBorrowings = _borrowings
+            .Where(borrowing => borrowing.Status == BorrowingStatus.Active)
+            .ToList();
+
+        return Task.FromResult(activeBorrowings);
+    }
+
+    public Task<Borrowing?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
+    {
+        Borrowing? borrowing = _borrowings.SingleOrDefault(item => item.Id == id);
+        return Task.FromResult(borrowing);
+    }
+
+    public Task<Borrowing> AddAsync(Borrowing borrowing, CancellationToken cancellationToken = default)
     {
         var storedBorrowing = borrowing.Id == 0
             ? new Borrowing(
@@ -29,6 +44,11 @@ public sealed class InMemoryBorrowingRepository : IBorrowingRepository
             : borrowing;
 
         _borrowings.Add(storedBorrowing);
+        return Task.FromResult(storedBorrowing);
+    }
+
+    public Task UpdateAsync(Borrowing borrowing, CancellationToken cancellationToken = default)
+    {
         return Task.CompletedTask;
     }
 }
