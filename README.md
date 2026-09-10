@@ -2,7 +2,7 @@
 
 Laboratory Activity 1 for ITSD 81 - Desktop Application Development.
 
-This repository contains the initial application structure for a campus equipment borrowing system. It does not include a database or graphical user interface yet. The goal is to show clear separation between domain rules, application use cases, and infrastructure details.
+This repository contains the application structure for a campus equipment borrowing system. Laboratory Activity 1 established the domain, application, infrastructure, and test layers. Laboratory Activity 2 extends the same solution with an Avalonia desktop interface using MVVM.
 
 ## Part A - System Analysis
 
@@ -175,3 +175,117 @@ dotnet run --project src/EquipmentBorrowing.Console/EquipmentBorrowing.Console.c
 ```
 
 The console program demonstrates one successful borrowing request and one failed request where a student is not allowed to borrow equipment.
+
+## Laboratory Activity 2 - Avalonia UI and MVVM
+
+### Desktop Project
+
+`EquipmentBorrowing.Desktop` is the presentation layer of the system. It is responsible for:
+
+- displaying equipment and active borrowing information;
+- collecting user input;
+- maintaining presentation state in ViewModels;
+- invoking application services through commands; and
+- showing success, validation, and failure messages to the user.
+
+The Desktop project references `EquipmentBorrowing.Application`, `EquipmentBorrowing.Domain`, and `EquipmentBorrowing.Infrastructure` so it can compose the working application. The existing Domain and Application projects do not reference Avalonia.
+
+### Updated Architecture
+
+```text
+Avalonia View
+      |
+      | Binding / Command
+      v
+ViewModel
+      |
+      | Application Operation
+      v
+Application Service
+      |
+      +----------> Domain
+      |
+      v
+Repository Interface
+      ^
+      |
+Infrastructure Implementation
+```
+
+The View contains XAML layout and bindings. The ViewModel contains selected values, observable collections, commands, and user-facing messages. Application services contain the use case workflow and business validation. Infrastructure repositories provide in-memory storage behind repository interfaces.
+
+### Borrow Equipment Flow
+
+1. The user opens the Equipment section.
+2. `EquipmentView` displays students and equipment using XAML data binding.
+3. The user selects a student, selects equipment, chooses an expected return date, and presses `Borrow Equipment`.
+4. `EquipmentViewModel` performs presentation validation, such as checking that a student and equipment item were selected.
+5. `EquipmentViewModel` calls `BorrowEquipmentService.BorrowAsync`.
+6. `BorrowEquipmentService` checks the business rules: student exists, student is allowed, equipment exists, equipment is available, and the student has not reached the active borrowing limit.
+7. If the request is valid, the service creates a borrowing record and marks the equipment unavailable.
+8. The ViewModel refreshes the equipment list and displays the result message.
+
+### Return Equipment Flow
+
+1. The user opens the Active Borrowings section.
+2. `BorrowingsView` displays active borrowing records using XAML data binding.
+3. The user selects an active borrowing and presses `Return Equipment`.
+4. `BorrowingsViewModel` checks that a borrowing was selected.
+5. `BorrowingsViewModel` calls `ReturnEquipmentService.ReturnAsync`.
+6. `ReturnEquipmentService` locates the borrowing, verifies that it has not already been returned, marks it returned, and marks the equipment available again.
+7. The ViewModel refreshes the active borrowing list and displays the result message.
+
+### Activity 2 Components
+
+```text
+src/
+├── EquipmentBorrowing.Application/
+│   ├── Interfaces/
+│   └── Services/
+│       ├── BorrowEquipmentService.cs
+│       ├── ReturnEquipmentService.cs
+│       ├── EquipmentCatalogService.cs
+│       ├── StudentCatalogService.cs
+│       └── ActiveBorrowingsService.cs
+│
+├── EquipmentBorrowing.Infrastructure/
+│   └── Repositories/
+│
+└── EquipmentBorrowing.Desktop/
+    ├── Views/
+    │   ├── EquipmentView.axaml
+    │   └── BorrowingsView.axaml
+    ├── ViewModels/
+    │   ├── MainWindowViewModel.cs
+    │   ├── EquipmentViewModel.cs
+    │   └── BorrowingsViewModel.cs
+    ├── App.axaml
+    ├── App.axaml.cs
+    └── MainWindow.axaml
+```
+
+### Architectural Reflection
+
+1. The View should not call a repository directly because the View's job is presentation, not data access or business workflow coordination.
+
+2. Business rules should not be implemented in the ViewModel because those rules belong to the existing Domain and Application layers. Keeping them there allows the same rules to be reused by a console app, desktop app, test project, or future web interface.
+
+3. The ViewModel is responsible for presentation state, selected values, observable collections, commands, simple input validation, and user-facing feedback.
+
+4. The Application layer can work without knowing Avalonia is being used because it exposes ordinary C# services and interfaces. Avalonia only appears in the Desktop project.
+
+5. Registering dependencies in one composition point keeps object creation organized. ViewModels receive services through constructors instead of creating repositories or services themselves.
+
+6. If the in-memory repositories were replaced by SQLite later, the Views, ViewModels, Domain models, repository interfaces, and application services should remain largely unchanged. The main change would be new Infrastructure repository implementations.
+
+### Running the Desktop Application
+
+From the repository root:
+
+```text
+dotnet restore
+dotnet build
+dotnet run --project src/EquipmentBorrowing.Desktop/EquipmentBorrowing.Desktop.csproj
+```
+
+Use the Equipment section to perform a borrowing transaction. Use the Active Borrowings section to return borrowed equipment.
