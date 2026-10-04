@@ -31,7 +31,7 @@ public sealed class Student
         MaxActiveBorrowings = maxActiveBorrowings;
     }
 
-    public int Id { get; }
+    public int Id { get; private set; }
 
     public string StudentNumber { get; }
 

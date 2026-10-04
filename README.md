@@ -289,3 +289,93 @@ dotnet run --project src/EquipmentBorrowing.Desktop/EquipmentBorrowing.Desktop.c
 ```
 
 Use the Equipment section to perform a borrowing transaction. Use the Active Borrowings section to return borrowed equipment.
+
+## Laboratory Activity 3 - SQLite Persistence with EF Core
+
+Laboratory Activity 3 replaces the temporary in-memory repositories used in the earlier activities with Entity Framework Core repositories backed by SQLite. The Domain models, Application services, Avalonia Views, ViewModels, commands, and repository interfaces remain in place.
+
+### Relational Database Design
+
+![Database diagram](docs/database-diagram.png)
+
+The database has three tables:
+
+- `Students`: `Id` is the primary key. `StudentNumber` is required and unique. `FullName`, `IsAllowedToBorrow`, and `MaxActiveBorrowings` are required. The maximum active borrowing value has a check constraint requiring a value of zero or greater.
+- `Equipment`: `Id` is the primary key. `AssetTag` is required and unique. `Name` and `IsAvailable` are required. An index on availability supports the common catalog filter.
+- `Borrowings`: `Id` is the primary key. `StudentId` and `EquipmentId` are required foreign keys. `DateReturned` is optional because an active borrowing has not been returned yet. `Status` records whether the borrowing is active or returned.
+
+One Student can have many Borrowings, and one Equipment record can appear in many Borrowings over time. The borrowing table stores only the foreign keys rather than duplicating student or equipment names. Foreign-key deletion is restricted to preserve borrowing history.
+
+### SQLite and EF Core
+
+The Infrastructure project references `Microsoft.EntityFrameworkCore.Sqlite` and `Microsoft.EntityFrameworkCore.Design`. SQLite is used because it provides a persistent relational database in a single local file without adding a server dependency.
+
+`EquipmentBorrowingDbContext` is the EF Core boundary for the database. It exposes `Students`, `Equipment`, and `Borrowings` sets and applies the separate entity configurations in `Persistence/Configurations`. Database startup initialization is performed by `DatabaseInitializer`, not by a View or ViewModel.
+
+At runtime, the database file is created in the current user's local application-data folder:
+
+```text
+%LOCALAPPDATA%\EquipmentBorrowing\EquipmentBorrowing.db
+```
+
+The initializer applies outstanding migrations and adds the initial students and equipment only when the database contains no students. It does not delete or recreate an existing database.
+
+### Repository Transition
+
+```text
+Activity 2
+Repository Interface -> InMemory Repository
+
+Activity 3
+Repository Interface -> EF Core Repository -> DbContext -> SQLite
+```
+
+`EfStudentRepository`, `EfEquipmentRepository`, and `EfBorrowingRepository` implement the existing repository interfaces. The Application services still depend only on those interfaces, so `BorrowEquipmentService` and `ReturnEquipmentService` do not contain SQLite, EF Core, or SQL code.
+
+The Desktop composition root uses `AddDbContextFactory` and registers the EF repositories. Views and ViewModels still communicate through bindings and commands only; neither accesses the DbContext directly.
+
+### Migration Process
+
+Create the initial migration under `src/EquipmentBorrowing.Infrastructure/Migrations` before the first run.
+
+To restore the repository's local EF CLI tool and create a new migration after a future model change:
+
+```text
+dotnet tool restore
+dotnet tool run dotnet-ef migrations add MeaningfulMigrationName --project src/EquipmentBorrowing.Infrastructure --startup-project src/EquipmentBorrowing.Desktop
+```
+
+To apply migrations manually:
+
+```text
+dotnet tool run dotnet-ef database update --project src/EquipmentBorrowing.Infrastructure --startup-project src/EquipmentBorrowing.Desktop
+```
+
+The normal Desktop startup calls `Database.MigrateAsync()`, so, after the initial migration is committed, a fresh clone creates the schema when the app starts. The SQLite viewer should show `Students`, `Equipment`, `Borrowings`, and `__EFMigrationsHistory`.
+
+### LINQ, SQL, and Tracking
+
+The application uses asynchronous LINQ operations for the equipment catalog, active borrowing details, and active-borrowing count. The active borrowing query joins the Student and Equipment tables and projects only the values the screen needs.
+
+Display-only queries use `AsNoTracking()` because those entities do not need change tracking. Return and equipment-state changes are attached by their repository update methods before `SaveChangesAsync()` persists them.
+
+Two inspected LINQ-to-SQL examples, including the generated SQLite SQL and explanations, are in [docs/generated-sql.md](docs/generated-sql.md). The manual SQL evidence required by the activity is in [docs/database-queries.sql](docs/database-queries.sql).
+
+### Persistence Demonstration
+
+1. Start the Desktop application and borrow an available piece of equipment.
+2. Open Active Borrowings and verify the borrowing appears.
+3. Close the application completely, start it again, and verify the active borrowing remains.
+4. Return the equipment, close the application, start it again, and verify the item is available and the returned borrowing is no longer active.
+
+This confirms that the data is stored in SQLite rather than in process memory.
+
+### Architectural Reflection
+
+1. The application did not need to be rewritten because the earlier services depended on repository interfaces, not on the in-memory implementation.
+2. A ViewModel should not use `DbContext` directly because it would mix presentation state with persistence details and bypass the application-service boundary.
+3. An EF repository translates the existing repository operations into asynchronous EF Core queries and updates, then saves the resulting database changes.
+4. An EF Core migration records a reproducible, versioned schema change so another computer can create the same database structure.
+5. Foreign keys ensure every borrowing references a real student and a real equipment record, preserving referential integrity.
+6. `AsNoTracking()` can improve read-only queries because EF Core does not need to keep those entities in its change tracker.
+7. Replacing SQLite with another provider later would primarily change the Infrastructure provider configuration and repository details; the Views, ViewModels, Domain, and Application services can remain unchanged.

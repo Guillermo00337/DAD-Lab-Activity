@@ -1,3 +1,4 @@
+using EquipmentBorrowing.Application.Services;
 using EquipmentBorrowing.Domain;
 
 namespace EquipmentBorrowing.Application.Interfaces;
@@ -7,6 +8,9 @@ public interface IBorrowingRepository
     Task<int> CountActiveByStudentIdAsync(int studentId, CancellationToken cancellationToken = default);
 
     Task<IReadOnlyList<Borrowing>> GetActiveAsync(CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<ActiveBorrowingDetails>> GetActiveDetailsAsync(
+        CancellationToken cancellationToken = default);
 
     Task<Borrowing?> GetByIdAsync(int id, CancellationToken cancellationToken = default);
 

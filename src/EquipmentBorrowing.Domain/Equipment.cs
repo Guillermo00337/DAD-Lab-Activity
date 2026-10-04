@@ -20,7 +20,7 @@ public sealed class Equipment
         IsAvailable = isAvailable;
     }
 
-    public int Id { get; }
+    public int Id { get; private set; }
 
     public string AssetTag { get; }
 

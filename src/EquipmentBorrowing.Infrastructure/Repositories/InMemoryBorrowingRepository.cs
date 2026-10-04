@@ -1,4 +1,5 @@
 using EquipmentBorrowing.Application.Interfaces;
+using EquipmentBorrowing.Application.Services;
 using EquipmentBorrowing.Domain;
 
 namespace EquipmentBorrowing.Infrastructure.Repositories;
@@ -21,6 +22,22 @@ public sealed class InMemoryBorrowingRepository : IBorrowingRepository
     {
         IReadOnlyList<Borrowing> activeBorrowings = _borrowings
             .Where(borrowing => borrowing.Status == BorrowingStatus.Active)
+            .ToList();
+
+        return Task.FromResult(activeBorrowings);
+    }
+
+    public Task<IReadOnlyList<ActiveBorrowingDetails>> GetActiveDetailsAsync(
+        CancellationToken cancellationToken = default)
+    {
+        IReadOnlyList<ActiveBorrowingDetails> activeBorrowings = _borrowings
+            .Where(borrowing => borrowing.Status == BorrowingStatus.Active)
+            .Select(borrowing => new ActiveBorrowingDetails(
+                borrowing.Id,
+                "Student details are provided by the persistent repository.",
+                "Equipment details are provided by the persistent repository.",
+                borrowing.DateBorrowed,
+                borrowing.ExpectedReturnDate))
             .ToList();
 
         return Task.FromResult(activeBorrowings);

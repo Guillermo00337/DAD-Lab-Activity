@@ -5,9 +5,11 @@ using EquipmentBorrowing.Application.Interfaces;
 using EquipmentBorrowing.Application.Services;
 using EquipmentBorrowing.Desktop.ViewModels;
 using EquipmentBorrowing.Desktop.Views;
-using EquipmentBorrowing.Domain;
+using EquipmentBorrowing.Infrastructure.Persistence;
 using EquipmentBorrowing.Infrastructure.Repositories;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 
 namespace EquipmentBorrowing.Desktop;
 
@@ -35,26 +37,23 @@ public partial class App : Avalonia.Application
 
     private static ServiceProvider ConfigureServices()
     {
-        var students = new[]
-        {
-            new Student(1, "2026-0001", "Ana Reyes", isAllowedToBorrow: true, maxActiveBorrowings: 2),
-            new Student(2, "2026-0002", "Marco Santos", isAllowedToBorrow: false, maxActiveBorrowings: 2),
-            new Student(3, "2026-0003", "Lia Cruz", isAllowedToBorrow: true, maxActiveBorrowings: 1)
-        };
-
-        var equipment = new[]
-        {
-            new Equipment(1, "CAM-001", "Digital Camera"),
-            new Equipment(2, "MIC-001", "Wireless Microphone"),
-            new Equipment(3, "TAB-001", "Drawing Tablet"),
-            new Equipment(4, "LAP-001", "Laptop")
-        };
-
         var services = new ServiceCollection();
+        string databasePath = DatabasePath.GetDatabasePath();
 
-        services.AddSingleton<IStudentRepository>(_ => new InMemoryStudentRepository(students));
-        services.AddSingleton<IEquipmentRepository>(_ => new InMemoryEquipmentRepository(equipment));
-        services.AddSingleton<IBorrowingRepository, InMemoryBorrowingRepository>();
+        string sqlLogPath = Path.Combine(Path.GetDirectoryName(databasePath)!, "efcore-sql.log");
+
+        services.AddDbContextFactory<EquipmentBorrowingDbContext>(options =>
+            options
+                .UseSqlite($"Data Source={databasePath}")
+                .LogTo(
+                    message => File.AppendAllText(sqlLogPath, message),
+                    new[] { DbLoggerCategory.Database.Command.Name },
+                    LogLevel.Information));
+        services.AddSingleton<DatabaseInitializer>();
+
+        services.AddSingleton<IStudentRepository, EfStudentRepository>();
+        services.AddSingleton<IEquipmentRepository, EfEquipmentRepository>();
+        services.AddSingleton<IBorrowingRepository, EfBorrowingRepository>();
 
         services.AddTransient<BorrowEquipmentService>();
         services.AddTransient<ReturnEquipmentService>();
@@ -66,6 +65,12 @@ public partial class App : Avalonia.Application
         services.AddSingleton<BorrowingsViewModel>();
         services.AddSingleton<MainWindowViewModel>();
 
-        return services.BuildServiceProvider();
+        ServiceProvider serviceProvider = services.BuildServiceProvider();
+        serviceProvider.GetRequiredService<DatabaseInitializer>()
+            .InitializeAsync()
+            .GetAwaiter()
+            .GetResult();
+
+        return serviceProvider;
     }
 }
