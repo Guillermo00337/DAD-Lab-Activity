@@ -2,58 +2,54 @@
     x:Class="EquipmentBorrowing.Desktop.Views.BorrowingsView"
     xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:services="using:EquipmentBorrowing.Application.Services"
+    xmlns:app="using:EquipmentBorrowing.Application.Services"
     xmlns:vm="using:EquipmentBorrowing.Desktop.ViewModels"
+    xmlns:domain="using:EquipmentBorrowing.Domain"
     x:DataType="vm:BorrowingsViewModel">
-
   <UserControl.DataTemplates>
-    <DataTemplate DataType="services:ActiveBorrowingDetails">
-      <Grid ColumnDefinitions="*,*,120,140" Margin="0,4">
-        <TextBlock Text="{Binding StudentName}" />
-        <TextBlock Grid.Column="1" Text="{Binding EquipmentName}" />
-        <TextBlock Grid.Column="2" Text="{Binding DateBorrowed}" />
-        <TextBlock Grid.Column="3" Text="{Binding ExpectedReturnDate}" />
+    <DataTemplate DataType="app:BorrowingHistoryItem">
+      <Grid ColumnDefinitions="55,*,*,110,110,110,90" ColumnSpacing="8" Margin="0,3">
+        <TextBlock Text="{Binding BorrowingId}" />
+        <TextBlock Grid.Column="1" Text="{Binding StudentName}" />
+        <TextBlock Grid.Column="2" Text="{Binding EquipmentName}" />
+        <TextBlock Grid.Column="3" Text="{Binding DateBorrowed}" />
+        <TextBlock Grid.Column="4" Text="{Binding ExpectedReturnDate}" />
+        <TextBlock Grid.Column="5" Text="{Binding DateReturned}" />
+        <TextBlock Grid.Column="6" Text="{Binding Status}" />
       </Grid>
     </DataTemplate>
   </UserControl.DataTemplates>
-
-  <Grid RowDefinitions="Auto,*" RowSpacing="14">
+  <Grid Margin="16" RowDefinitions="Auto,Auto,*,Auto" RowSpacing="12">
     <StackPanel Spacing="4">
-      <TextBlock Classes="SectionHeading" Text="Active Borrowings" />
-      <TextBlock Text="Return borrowed equipment through the application layer." />
+      <TextBlock FontSize="21" FontWeight="SemiBold" Text="Borrowing records" />
+      <TextBlock Text="Search by student name, student number or equipment name. Combine search, status and sort criteria." />
+      <TextBlock Text="Loading borrowing records…" IsVisible="{Binding IsLoading}" Foreground="#64748B" />
     </StackPanel>
-
-    <Grid Grid.Row="1" ColumnDefinitions="*,300" ColumnSpacing="16">
-      <Border Classes="Panel">
-        <DockPanel LastChildFill="True">
-          <TextBlock DockPanel.Dock="Top" Classes="Label" Text="Currently Borrowed" />
-          <ListBox
-              Margin="0,10,0,0"
-              ItemsSource="{Binding ActiveBorrowings}"
-              SelectedItem="{Binding SelectedBorrowing}" />
-        </DockPanel>
-      </Border>
-
-      <Border Grid.Column="1" Classes="Panel">
-        <StackPanel Spacing="12">
-          <TextBlock Classes="Label" Text="Return Equipment" />
-
-          <TextBlock Text="Selected Borrowing" />
-          <TextBlock
-              FontWeight="SemiBold"
-              Text="{Binding SelectedBorrowing.EquipmentName, FallbackValue='No borrowing selected'}" />
-
-          <Button
-              Command="{Binding ReturnSelectedCommand}"
-              Content="Return Equipment" />
-
-          <Button
-              Command="{Binding LoadCommand}"
-              Content="Refresh" />
-
-          <TextBlock Classes="Status" Text="{Binding StatusMessage}" />
-        </StackPanel>
-      </Border>
+    <Grid Grid.Row="1" ColumnDefinitions="2*,*,*,Auto,Auto" ColumnSpacing="8">
+      <TextBox Watermark="Search name, student number or equipment" Text="{Binding SearchText}" />
+      <ComboBox Grid.Column="1" ItemsSource="{Binding StatusOptions}" SelectedItem="{Binding StatusFilter}" />
+      <ComboBox Grid.Column="2" ItemsSource="{Binding SortOptions}" SelectedItem="{Binding SortField}" />
+      <CheckBox Grid.Column="3" VerticalAlignment="Center" IsChecked="{Binding Descending}" Content="Descending" />
+      <Button Grid.Column="4" Command="{Binding LoadCommand}" Content="Search" />
     </Grid>
+    <Border Grid.Row="2" Padding="12" BorderBrush="#CBD5E1" BorderThickness="1" CornerRadius="8">
+      <DockPanel LastChildFill="True">
+        <Grid DockPanel.Dock="Top" ColumnDefinitions="55,*,*,110,110,110,90" ColumnSpacing="8" Margin="0,0,0,8">
+          <TextBlock FontWeight="SemiBold" Text="ID" />
+          <TextBlock Grid.Column="1" FontWeight="SemiBold" Text="Student" />
+          <TextBlock Grid.Column="2" FontWeight="SemiBold" Text="Equipment" />
+          <TextBlock Grid.Column="3" FontWeight="SemiBold" Text="Checkout" />
+          <TextBlock Grid.Column="4" FontWeight="SemiBold" Text="Due" />
+          <TextBlock Grid.Column="5" FontWeight="SemiBold" Text="Returned" />
+          <TextBlock Grid.Column="6" FontWeight="SemiBold" Text="Status" />
+        </Grid>
+        <ListBox ItemsSource="{Binding Borrowings}" SelectedItem="{Binding SelectedBorrowing}" />
+      </DockPanel>
+    </Border>
+    <StackPanel Grid.Row="3" Orientation="Horizontal" Spacing="10">
+      <Button Command="{Binding ClearCriteriaCommand}" Content="Clear criteria" />
+      <Button Command="{Binding ReturnSelectedCommand}" Content="Return selected active borrowing" />
+      <TextBlock VerticalAlignment="Center" Text="{Binding StatusMessage}" TextWrapping="Wrap" />
+    </StackPanel>
   </Grid>
 </UserControl>

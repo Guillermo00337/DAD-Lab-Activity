@@ -5,61 +5,65 @@
     xmlns:domain="using:EquipmentBorrowing.Domain"
     xmlns:vm="using:EquipmentBorrowing.Desktop.ViewModels"
     x:DataType="vm:EquipmentViewModel">
-
   <UserControl.DataTemplates>
     <DataTemplate DataType="domain:Student">
-      <TextBlock Text="{Binding FullName}" />
+      <StackPanel Spacing="2">
+        <TextBlock Text="{Binding FullName}" />
+        <TextBlock Text="{Binding StudentNumber}" FontSize="11" Foreground="#64748B" />
+      </StackPanel>
     </DataTemplate>
     <DataTemplate DataType="domain:Equipment">
-      <Grid ColumnDefinitions="90,*,130" Margin="0,4">
-        <TextBlock Text="{Binding AssetTag}" />
-        <TextBlock Grid.Column="1" Text="{Binding Name}" />
-        <TextBlock Grid.Column="2" Text="{Binding IsAvailable, StringFormat='Available: {0}'}" />
-      </Grid>
+      <StackPanel Spacing="2">
+        <TextBlock Text="{Binding Name}" />
+        <TextBlock Text="{Binding AssetTag}" FontSize="11" Foreground="#64748B" />
+      </StackPanel>
     </DataTemplate>
   </UserControl.DataTemplates>
-
-  <Grid RowDefinitions="Auto,*" RowSpacing="14">
-    <StackPanel Spacing="4">
-      <TextBlock Classes="SectionHeading" Text="Equipment" />
-      <TextBlock Text="Borrow available laboratory equipment using the existing application service." />
-    </StackPanel>
-
-    <Grid Grid.Row="1" ColumnDefinitions="*,340" ColumnSpacing="16">
-      <Border Classes="Panel">
-        <DockPanel LastChildFill="True">
-          <TextBlock DockPanel.Dock="Top" Classes="Label" Text="Equipment List" />
-          <ListBox
-              Margin="0,10,0,0"
-              ItemsSource="{Binding EquipmentItems}"
-              SelectedItem="{Binding SelectedEquipment}" />
-        </DockPanel>
-      </Border>
-
-      <Border Grid.Column="1" Classes="Panel">
-        <StackPanel Spacing="12">
-          <TextBlock Classes="Label" Text="Borrow Equipment" />
-
-          <TextBlock Text="Student" />
-          <ComboBox
-              ItemsSource="{Binding Students}"
-              SelectedItem="{Binding SelectedStudent}" />
-
-          <TextBlock Text="Selected Equipment" />
-          <TextBlock
-              FontWeight="SemiBold"
-              Text="{Binding SelectedEquipment.Name, FallbackValue='No equipment selected'}" />
-
-          <TextBlock Text="Expected Return Date" />
-          <DatePicker SelectedDate="{Binding ExpectedReturnDate}" />
-
-          <Button
-              Command="{Binding BorrowCommand}"
-              Content="Borrow Equipment" />
-
-          <TextBlock Classes="Status" Text="{Binding StatusMessage}" />
+  <ScrollViewer>
+    <Grid Margin="16" RowDefinitions="Auto,Auto,*" RowSpacing="14">
+      <StackPanel Spacing="4">
+        <TextBlock FontSize="21" FontWeight="SemiBold" Text="Borrow equipment" />
+        <TextBlock Text="Loading catalog…" IsVisible="{Binding IsLoading}" Foreground="#64748B" />
+        <TextBlock Text="Select an eligible student, a checkout date (today), and an expected return date later than today." />
+      </StackPanel>
+      <Grid Grid.Row="1" ColumnDefinitions="*,*" ColumnSpacing="16">
+        <Border Padding="16" BorderBrush="#CBD5E1" BorderThickness="1" CornerRadius="8">
+          <StackPanel Spacing="10">
+            <TextBlock FontSize="16" FontWeight="SemiBold" Text="Single-item checkout (UC-03)" />
+            <TextBlock Text="Student" />
+            <ComboBox ItemsSource="{Binding Students}" SelectedItem="{Binding SelectedStudent}" />
+            <TextBlock Text="Available equipment (UC-02)" />
+            <ComboBox ItemsSource="{Binding AvailableEquipment}" SelectedItem="{Binding SelectedEquipment}" />
+            <TextBlock Text="Expected return date" />
+            <DatePicker SelectedDate="{Binding ExpectedReturnDate}" />
+            <Button HorizontalAlignment="Left" Command="{Binding BorrowCommand}" Content="Borrow selected item" />
+          </StackPanel>
+        </Border>
+        <Border Grid.Column="1" Padding="16" BorderBrush="#CBD5E1" BorderThickness="1" CornerRadius="8">
+          <StackPanel Spacing="10">
+            <TextBlock FontSize="16" FontWeight="SemiBold" Text="Multi-item checkout (UC-06)" />
+            <TextBlock Text="Use the same student and return date. Select at least two distinct available items." TextWrapping="Wrap" />
+            <ItemsControl ItemsSource="{Binding MultiItemChoices}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="vm:EquipmentChoice">
+                  <CheckBox IsChecked="{Binding IsSelected}" IsEnabled="{Binding IsAvailable}">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                      <TextBlock Text="{Binding DisplayName}" />
+                    </StackPanel>
+                  </CheckBox>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            <Button HorizontalAlignment="Left" Command="{Binding BorrowMultipleCommand}" Content="Check out selected items" />
+          </StackPanel>
+        </Border>
+      </Grid>
+      <Border Grid.Row="2" Padding="12" Background="#F1F5F9" CornerRadius="8">
+        <StackPanel Orientation="Horizontal" Spacing="12">
+          <Button Command="{Binding LoadCommand}" Content="Refresh data" />
+          <TextBlock VerticalAlignment="Center" Text="{Binding StatusMessage}" TextWrapping="Wrap" />
         </StackPanel>
       </Border>
     </Grid>
-  </Grid>
+  </ScrollViewer>
 </UserControl>

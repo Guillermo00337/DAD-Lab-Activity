@@ -5,64 +5,22 @@ namespace EquipmentBorrowing.Application.Services;
 
 public sealed class BorrowEquipmentService
 {
-    private readonly IStudentRepository _studentRepository;
-    private readonly IEquipmentRepository _equipmentRepository;
-    private readonly IBorrowingRepository _borrowingRepository;
+    private readonly IBorrowingRepository _repository;
+    public BorrowEquipmentService(IBorrowingRepository repository) => _repository = repository;
 
-    public BorrowEquipmentService(
-        IStudentRepository studentRepository,
-        IEquipmentRepository equipmentRepository,
-        IBorrowingRepository borrowingRepository)
+    public async Task<BorrowEquipmentResult> BorrowAsync(BorrowEquipmentRequest request, CancellationToken cancellationToken = default)
     {
-        _studentRepository = studentRepository;
-        _equipmentRepository = equipmentRepository;
-        _borrowingRepository = borrowingRepository;
+        CheckoutResult result = await _repository.CheckoutAsync(
+            request.StudentId, new[] { request.EquipmentId }, request.DateBorrowed,
+            request.ExpectedReturnDate, requireMultiple: false, cancellationToken);
+        return result.Succeeded
+            ? BorrowEquipmentResult.Success(result.Borrowings[0])
+            : BorrowEquipmentResult.Failure(result.Message);
     }
 
-    public async Task<BorrowEquipmentResult> BorrowAsync(
-        BorrowEquipmentRequest request,
-        CancellationToken cancellationToken = default)
-    {
-        Student? student = await _studentRepository.GetByIdAsync(request.StudentId, cancellationToken);
-        if (student is null)
-        {
-            return BorrowEquipmentResult.Failure("Student does not exist.");
-        }
-
-        if (!student.IsAllowedToBorrow)
-        {
-            return BorrowEquipmentResult.Failure("Student is not currently allowed to borrow equipment.");
-        }
-
-        Equipment? equipment = await _equipmentRepository.GetByIdAsync(request.EquipmentId, cancellationToken);
-        if (equipment is null)
-        {
-            return BorrowEquipmentResult.Failure("Equipment does not exist.");
-        }
-
-        if (!equipment.IsAvailable)
-        {
-            return BorrowEquipmentResult.Failure("Equipment is not available.");
-        }
-
-        int activeBorrowings = await _borrowingRepository.CountActiveByStudentIdAsync(student.Id, cancellationToken);
-        if (!student.CanStartBorrowing(activeBorrowings))
-        {
-            return BorrowEquipmentResult.Failure("Student has reached the maximum number of active borrowings.");
-        }
-
-        var borrowing = new Borrowing(
-            id: 0,
-            studentId: student.Id,
-            equipmentId: equipment.Id,
-            dateBorrowed: request.DateBorrowed,
-            expectedReturnDate: request.ExpectedReturnDate);
-
-        equipment.MarkBorrowed();
-
-        Borrowing storedBorrowing = await _borrowingRepository.AddAsync(borrowing, cancellationToken);
-        await _equipmentRepository.UpdateAsync(equipment, cancellationToken);
-
-        return BorrowEquipmentResult.Success(storedBorrowing);
-    }
+    public Task<CheckoutResult> BorrowMultipleAsync(
+        int studentId, IReadOnlyCollection<int> equipmentIds, DateOnly checkoutDate,
+        DateOnly expectedReturnDate, CancellationToken cancellationToken = default) =>
+        _repository.CheckoutAsync(studentId, equipmentIds, checkoutDate, expectedReturnDate,
+            requireMultiple: true, cancellationToken);
 }

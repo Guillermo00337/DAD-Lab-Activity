@@ -1,5 +1,31 @@
 # Campus Equipment Borrowing System
 
+> **Current version: Laboratory Activity 4 - PostgreSQL / Npgsql**
+>
+> The current operational application uses **PostgreSQL through EF Core and Npgsql**. It does not use the earlier SQLite database or the historical in-memory repositories described in the Activity 1-3 sections below. Those earlier sections are retained as project history and context; do not follow their old database setup or execution instructions when running the current Activity 4 version.
+>
+> **For the current application, start with these sections and documents:**
+>
+> 1. [Laboratory Activity 4 - Advanced Data-Driven Workflows and PostgreSQL Integration](#laboratory-activity-4--advanced-data-driven-workflows-and-postgresql-integration)
+> 2. [PostgreSQL setup guide](docs/POSTGRESQL_SETUP.md) - prerequisites, database creation, secret-free connection configuration, migrations, startup, and troubleshooting.
+> 3. [Activity 4 use-case catalog](docs/ACTIVITY_4_USE_CASE_CATALOG.md) - the fourteen required use cases.
+> 4. [Activity 4 verification checklist](docs/ACTIVITY_4_VERIFICATION_CHECKLIST.md), [traceability matrix](docs/ACTIVITY_4_TRACEABILITY.md), and [SQL evidence guide](docs/ACTIVITY_4_SQL_EVIDENCE.md) - complete these with actual observed evidence before submission.
+>
+> **Current Activity 4 startup (PowerShell, from the repository root):**
+>
+> ```powershell
+> dotnet tool restore
+> dotnet restore
+> dotnet build
+> dotnet run --project src\EquipmentBorrowing.Desktop\EquipmentBorrowing.Desktop.csproj
+> ```
+>
+> Before running the desktop application, create the `equipment_borrowing` PostgreSQL database and set `EQUIPMENT_BORROWING_CONNECTION_STRING` in the current PowerShell session as described in [docs/POSTGRESQL_SETUP.md](docs/POSTGRESQL_SETUP.md). The application applies pending migrations during startup. The explicit `dotnet-ef database update` command is also documented in the setup guide.
+>
+> **Credentials:** Never put a real PostgreSQL password or a credential-bearing connection string in this README, source control, screenshots, or the submission archive.
+
+---
+
 Laboratory Activity 1 for ITSD 81 - Desktop Application Development.
 
 This repository contains the application structure for a campus equipment borrowing system. Laboratory Activity 1 established the domain, application, infrastructure, and test layers. Laboratory Activity 2 extends the same solution with an Avalonia desktop interface using MVVM.
@@ -115,9 +141,9 @@ Contains the initial test project structure. More tests can be added later for d
 ```text
 Console Demo / Future UI
         |
-        ↓
+        **↓**
 Application ----> Domain
-        ↑
+        **↑**
         |
 Infrastructure
 ```
@@ -290,13 +316,13 @@ dotnet run --project src/EquipmentBorrowing.Desktop/EquipmentBorrowing.Desktop.c
 
 Use the Equipment section to perform a borrowing transaction. Use the Active Borrowings section to return borrowed equipment.
 
-## Laboratory Activity 3 - SQLite Persistence with EF Core
+## Laboratory Activity 3 - SQLite Persistence with EF Core (previous activity baseline)
 
 Laboratory Activity 3 replaces the temporary in-memory repositories used in the earlier activities with Entity Framework Core repositories backed by SQLite. The Domain models, Application services, Avalonia Views, ViewModels, commands, and repository interfaces remain in place.
 
 ### Relational Database Design
 
-![Database diagram](docs/database-diagram.png)
+![Activity 3 SQLite database diagram](docs/database-diagram-activity3.png)
 
 The database has three tables:
 
@@ -379,3 +405,89 @@ This confirms that the data is stored in SQLite rather than in process memory.
 5. Foreign keys ensure every borrowing references a real student and a real equipment record, preserving referential integrity.
 6. `AsNoTracking()` can improve read-only queries because EF Core does not need to keep those entities in its change tracker.
 7. Replacing SQLite with another provider later would primarily change the Infrastructure provider configuration and repository details; the Views, ViewModels, Domain, and Application services can remain unchanged.
+
+
+# Laboratory Activity 4 - Advanced Data-Driven Workflows and PostgreSQL Integration
+
+Activity 4 continues the same Campus Equipment Borrowing System and changes the operational provider from SQLite to PostgreSQL. The existing Activity 3 SQLite section above is retained as historical documentation; **the current Activity 4 application uses PostgreSQL/Npgsql and does not open the earlier SQLite database**. The activity brief does not require copying historical SQLite rows into PostgreSQL.
+
+## Required Activity 4 use cases
+
+The desktop application includes the fourteen required actor-level use cases:
+
+- UC-01-UC-05: equipment catalog, available equipment, single checkout, active borrowing list and return.
+- UC-06-UC-09: coordinated multi-item checkout, student history, equipment history and borrowing search/filter/sort.
+- UC-12-UC-14: student registration, student profile update and borrowing eligibility.
+- UC-15-UC-16: equipment registration and descriptive update.
+
+UC-10, UC-11 and UC-17-UC-27 are deferred to Activity 5. UC-28-UC-33 are future scope. The expanded use-case fields and flows are documented in [docs/ACTIVITY_4_USE_CASE_CATALOG.md](docs/ACTIVITY_4_USE_CASE_CATALOG.md).
+
+## PostgreSQL, EF Core and migration
+
+The Infrastructure project uses `Npgsql.EntityFrameworkCore.PostgreSQL` with EF Core 10. `EquipmentBorrowingDbContext` continues to be the database boundary. The SQLite migrations are replaced by the initial PostgreSQL schema migration under `src/EquipmentBorrowing.Infrastructure/Migrations`. A clean PostgreSQL database is expected for this activity; old SQLite rows are not migrated.
+
+Create a PostgreSQL database named `equipment_borrowing`, then configure `EQUIPMENT_BORROWING_CONNECTION_STRING`. The value is read from the environment so credentials do not need to be committed. See [docs/POSTGRESQL_SETUP.md](docs/POSTGRESQL_SETUP.md) for exact PowerShell commands.
+
+The migration defines:
+
+- Primary keys and required fields for Students, Equipment and Borrowings.
+- Foreign keys from Borrowings to Students and Equipment, with restricted deletion to retain history.
+- Check constraints for nonblank required values, valid checkout/return dates and consistent borrowing status.
+- Expression-based unique indexes on `upper(btrim(StudentNumber))` and `upper(btrim(AssetTag))` enforce trimmed, case-insensitive identifier uniqueness.
+- A PostgreSQL partial unique index on active Borrowings (`Status = 0`) to prevent a physical item from having more than one active borrowing.
+
+New students default to eligible. New equipment defaults to available. Seed data is inserted only when the corresponding table is empty; existing rows are not cleared on startup.
+
+## Architecture and context lifetime
+
+The architectural path remains:
+
+```text
+Avalonia View
+    ↓
+ViewModel
+    ↓
+Application Service
+    ↓
+Repository Abstraction
+    ↓
+EF Core Infrastructure / DbContext
+    ↓
+PostgreSQL
+```
+
+Views and ViewModels do not execute SQL or access `DbContext`. The Desktop composition root registers `AddDbContextFactory`. Repository services use a singleton factory and create/dispose a short-lived `DbContext` per operation. This avoids sharing a non-thread-safe DbContext between UI commands and allows asynchronous operations to use independent contexts.
+
+## Checkout transactions and integrity
+
+Single-item and multi-item checkout use the same repository transaction boundary. The repository re-reads the student, eligibility, active count, equipment references and availability inside a serializable PostgreSQL transaction. All new borrowing rows and availability changes are saved together. A failed transaction is rolled back; a uniqueness or serialization conflict is rejected and the UI can refresh. A partial unique index additionally protects one-active-borrowing-per-equipment. The return workflow also updates borrowing status/date and equipment availability in one transaction.
+
+The application limit is three active items per student. Expected return must be later than the checkout date. Identifier normalization uses `Trim()` and invariant uppercase values for unique comparison. Updates are descriptive only: they retain the same primary key and cannot directly change equipment availability or borrowing history. Restricting a student blocks new checkout but does not cancel existing loans or prevent return.
+
+For a connection loss while commit acknowledgement is in progress, the repository reports an unknown outcome and does not retry automatically. Staff must reconnect and read the current state before deciding whether to submit another action.
+
+## History, search and asynchronous loading
+
+Student and equipment history return active and returned borrowings with related student/equipment details. Borrowing search supports case-insensitive partial text in student name, student number or equipment name; active/returned/all filtering; checkout-date or expected-return-date ordering; ascending/descending order; combined criteria and clear/reset. A stable borrowing ID breaks date ties. History and search use asynchronous database queries and the ViewModels expose loading and error status.
+
+## Verification and evidence
+
+- Use [docs/postgresql-verification-queries.sql](docs/postgresql-verification-queries.sql) to inspect tables, migration history, related borrowing rows, normalized duplicate checks, active-item integrity and indexes.
+- Use [docs/ACTIVITY_4_SQL_EVIDENCE.md](docs/ACTIVITY_4_SQL_EVIDENCE.md) to capture at least two **actual** EF Core-generated SQL SELECT statements from `%LOCALAPPDATA%\EquipmentBorrowing\efcore-postgresql-sql.log`. Placeholder statements in the document are not generated evidence.
+- Use [docs/ACTIVITY_4_TRACEABILITY.md](docs/ACTIVITY_4_TRACEABILITY.md) and [docs/ACTIVITY_4_VERIFICATION_CHECKLIST.md](docs/ACTIVITY_4_VERIFICATION_CHECKLIST.md) to record real observed results for A01–A19. Do not mark tests complete until PostgreSQL readback has been performed through a fresh connection/context.
+- The actor-level diagram is available in [docs/activity4-use-cases.svg](docs/activity4-use-cases.svg) and [docs/activity4-use-cases.png](docs/activity4-use-cases.png); the PostgreSQL ER diagram is in [docs/database-diagram.png](docs/database-diagram.png).
+- The uploaded starter ZIP did not include `.git`; use [docs/GIT_HISTORY_GUIDE.md](docs/GIT_HISTORY_GUIDE.md) to apply these changes in your original local repository and preserve its real history. See [docs/ACTIVITY_4_PREPARATION_NOTES.md](docs/ACTIVITY_4_PREPARATION_NOTES.md) for the local verification status and required checks.
+
+## Activity 4 local commands
+
+From the repository root, after PostgreSQL is installed, the database exists, and the connection environment variable is set:
+
+```powershell
+dotnet tool restore
+dotnet restore
+dotnet build
+dotnet tool run dotnet-ef database update --project src\EquipmentBorrowing.Infrastructure\EquipmentBorrowing.Infrastructure.csproj --startup-project src\EquipmentBorrowing.Desktop\EquipmentBorrowing.Desktop.csproj
+dotnet run --project src\EquipmentBorrowing.Desktop\EquipmentBorrowing.Desktop.csproj
+```
+
+The application also applies pending migrations during startup. `dotnet build` alone is not proof that PostgreSQL operations, transaction rollback or restart persistence work; complete the manual acceptance demonstrations and record actual evidence.

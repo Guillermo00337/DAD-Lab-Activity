@@ -1,0 +1,13 @@
+digraph Activity4UseCases {
+  graph [rankdir=LR, bgcolor="white", pad="0.25", nodesep="0.30", ranksep="0.7", fontname="Arial", label="Campus Equipment Borrowing System — Activity 4 required use cases", labelloc=t, fontsize=20];
+  node [fontname="Arial", fontsize=10]; edge [color="#64748B", penwidth=1.2, arrowsize=0.6];
+  actor [shape=box, style="rounded,filled", fillcolor="#E2E8F0", label="Laboratory Staff /\nEquipment Custodian"];
+  subgraph cluster_system { label="Campus Equipment Borrowing System"; color="#94A3B8"; style="rounded";
+    node [shape=ellipse, style="filled", fillcolor="#EFF6FF"];
+    uc01 [label="UC-01 View Equipment Catalog"]; uc02 [label="UC-02 Find Available Equipment"]; uc03 [label="UC-03 Borrow Equipment"]; uc04 [label="UC-04 View Active Borrowings"]; uc05 [label="UC-05 Return Equipment"];
+    uc06 [label="UC-06 Check Out Multiple Items"]; uc07 [label="UC-07 View Student History"]; uc08 [label="UC-08 View Equipment History"]; uc09 [label="UC-09 Search / Filter / Sort"];
+    uc12 [label="UC-12 Register Student"]; uc13 [label="UC-13 Update Student Info"]; uc14 [label="UC-14 Change Student Eligibility"];
+    uc15 [label="UC-15 Register Equipment"]; uc16 [label="UC-16 Update Equipment Info"];
+  }
+  actor -> {uc01 uc02 uc03 uc04 uc05 uc06 uc07 uc08 uc09 uc12 uc13 uc14 uc15 uc16};
+}

@@ -8,89 +8,120 @@ namespace EquipmentBorrowing.Desktop.ViewModels;
 
 public sealed partial class EquipmentViewModel : ViewModelBase
 {
-    private readonly EquipmentCatalogService _equipmentCatalogService;
-    private readonly StudentCatalogService _studentCatalogService;
-    private readonly BorrowEquipmentService _borrowEquipmentService;
+    private readonly EquipmentCatalogService _equipmentCatalog;
+    private readonly StudentCatalogService _studentCatalog;
+    private readonly BorrowEquipmentService _borrowService;
 
-    [ObservableProperty]
-    private Student? selectedStudent;
-
-    [ObservableProperty]
-    private Equipment? selectedEquipment;
-
-    [ObservableProperty]
-    private DateTimeOffset? expectedReturnDate = DateTimeOffset.Now.AddDays(7);
-
-    [ObservableProperty]
-    private string statusMessage = "Select a student and available equipment to begin.";
-
-    public EquipmentViewModel(
-        EquipmentCatalogService equipmentCatalogService,
-        StudentCatalogService studentCatalogService,
-        BorrowEquipmentService borrowEquipmentService)
-    {
-        _equipmentCatalogService = equipmentCatalogService;
-        _studentCatalogService = studentCatalogService;
-        _borrowEquipmentService = borrowEquipmentService;
-    }
+    [ObservableProperty] private Student? selectedStudent;
+    [ObservableProperty] private Equipment? selectedEquipment;
+    [ObservableProperty] private DateTimeOffset? expectedReturnDate = DateTimeOffset.Now.AddDays(7);
+    [ObservableProperty] private string statusMessage = "Choose a student and available item.";
+    [ObservableProperty] private bool isLoading;
 
     public ObservableCollection<Student> Students { get; } = [];
-
     public ObservableCollection<Equipment> EquipmentItems { get; } = [];
+    public ObservableCollection<Equipment> AvailableEquipment { get; } = [];
+    public ObservableCollection<EquipmentChoice> MultiItemChoices { get; } = [];
+
+    public EquipmentViewModel(EquipmentCatalogService equipmentCatalog, StudentCatalogService studentCatalog, BorrowEquipmentService borrowService)
+    {
+        _equipmentCatalog = equipmentCatalog;
+        _studentCatalog = studentCatalog;
+        _borrowService = borrowService;
+    }
 
     [RelayCommand]
     public async Task LoadAsync()
     {
-        Students.Clear();
-        foreach (Student student in await _studentCatalogService.GetStudentsAsync())
+        IsLoading = true;
+        int? selectedStudentId = SelectedStudent?.Id;
+        int? selectedEquipmentId = SelectedEquipment?.Id;
+        try
         {
-            Students.Add(student);
+            Students.Clear();
+            foreach (Student item in await _studentCatalog.GetStudentsAsync()) Students.Add(item);
+            EquipmentItems.Clear();
+            AvailableEquipment.Clear();
+            MultiItemChoices.Clear();
+            IReadOnlyList<Equipment> allEquipment = await _equipmentCatalog.GetEquipmentAsync();
+            IReadOnlyList<Equipment> availableEquipment = await _equipmentCatalog.GetAvailableEquipmentAsync();
+            foreach (Equipment item in allEquipment)
+            {
+                EquipmentItems.Add(item);
+                MultiItemChoices.Add(new EquipmentChoice(item));
+            }
+            foreach (Equipment item in availableEquipment) AvailableEquipment.Add(item);
+            SelectedStudent = selectedStudentId.HasValue ? Students.FirstOrDefault(x => x.Id == selectedStudentId.Value) : null;
+            SelectedEquipment = selectedEquipmentId.HasValue ? AvailableEquipment.FirstOrDefault(x => x.Id == selectedEquipmentId.Value) : null;
+            StatusMessage = $"Loaded {EquipmentItems.Count} equipment records; {AvailableEquipment.Count} are available.";
         }
-
-        EquipmentItems.Clear();
-        foreach (Equipment equipment in await _equipmentCatalogService.GetEquipmentAsync())
+        catch (Exception)
         {
-            EquipmentItems.Add(equipment);
+            StatusMessage = "Unable to load the catalog. Check PostgreSQL and choose Refresh to retry.";
         }
+        finally { IsLoading = false; }
     }
 
     [RelayCommand]
     private async Task BorrowAsync()
     {
-        if (SelectedStudent is null)
+        if (!TryGetDates(out DateOnly checkout, out DateOnly due)) return;
+        if (SelectedStudent is null || SelectedEquipment is null)
         {
-            StatusMessage = "Please select a student.";
+            StatusMessage = "Select a student and one equipment item.";
             return;
         }
-
-        if (SelectedEquipment is null)
+        if (!SelectedEquipment.IsAvailable)
         {
-            StatusMessage = "Please select equipment.";
+            StatusMessage = "The selected equipment is not available.";
             return;
         }
+        try
+        {
+            var result = await _borrowService.BorrowAsync(new BorrowEquipmentRequest(SelectedStudent.Id, SelectedEquipment.Id, checkout, due));
+            await RefreshAfterOperationAsync(result.Message);
+        }
+        catch (Exception) { StatusMessage = "Borrowing failed. Refresh and verify the database before retrying."; }
+    }
 
+    [RelayCommand]
+    private async Task BorrowMultipleAsync()
+    {
+        if (!TryGetDates(out DateOnly checkout, out DateOnly due)) return;
+        if (SelectedStudent is null) { StatusMessage = "Select a student."; return; }
+        int[] ids = MultiItemChoices.Where(x => x.IsSelected).Select(x => x.Id).ToArray();
+        try
+        {
+            CheckoutResult result = await _borrowService.BorrowMultipleAsync(SelectedStudent.Id, ids, checkout, due);
+            await RefreshAfterOperationAsync(result.Message);
+        }
+        catch (Exception) { StatusMessage = "Multi-item checkout failed. Reconnect and refresh before deciding whether to retry."; }
+    }
+
+    private async Task RefreshAfterOperationAsync(string operationMessage)
+    {
+        await LoadAsync();
+        if (StatusMessage.StartsWith("Unable to load", StringComparison.OrdinalIgnoreCase))
+            StatusMessage = operationMessage + " The catalog refresh also failed; use Refresh after reconnecting.";
+        else
+            StatusMessage = operationMessage;
+    }
+
+    private bool TryGetDates(out DateOnly checkout, out DateOnly due)
+    {
+        checkout = DateOnly.FromDateTime(DateTime.Today);
+        due = default;
         if (ExpectedReturnDate is null)
         {
-            StatusMessage = "Please select an expected return date.";
-            return;
+            StatusMessage = "Choose an expected return date.";
+            return false;
         }
-
-        DateOnly borrowedDate = DateOnly.FromDateTime(DateTime.Today);
-        DateOnly returnDate = DateOnly.FromDateTime(ExpectedReturnDate.Value.DateTime);
-        if (returnDate < borrowedDate)
+        due = DateOnly.FromDateTime(ExpectedReturnDate.Value.DateTime);
+        if (due <= checkout)
         {
-            StatusMessage = "Expected return date cannot be earlier than today.";
-            return;
+            StatusMessage = "Expected return date must be later than today.";
+            return false;
         }
-
-        BorrowEquipmentResult result = await _borrowEquipmentService.BorrowAsync(
-            new BorrowEquipmentRequest(
-                SelectedStudent.Id,
-                SelectedEquipment.Id,
-                borrowedDate,
-                returnDate));
-
-        StatusMessage = result.Message;
-        await LoadAsync();
+        return true;
     }
 }

@@ -14,4 +14,7 @@ public sealed class EquipmentCatalogService
 
     public Task<IReadOnlyList<Equipment>> GetEquipmentAsync(CancellationToken cancellationToken = default) =>
         _equipmentRepository.GetAllAsync(cancellationToken);
+
+    public Task<IReadOnlyList<Equipment>> GetAvailableEquipmentAsync(CancellationToken cancellationToken = default) =>
+        _equipmentRepository.GetAvailableAsync(cancellationToken);
 }
