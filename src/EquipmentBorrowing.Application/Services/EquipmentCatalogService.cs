@@ -12,9 +12,16 @@ public sealed class EquipmentCatalogService
         _equipmentRepository = equipmentRepository;
     }
 
-    public Task<IReadOnlyList<Equipment>> GetEquipmentAsync(CancellationToken cancellationToken = default) =>
+    public Task<IReadOnlyList<Equipment>> GetEquipmentAsync(
+        CancellationToken cancellationToken = default) =>
         _equipmentRepository.GetAllAsync(cancellationToken);
 
-    public Task<IReadOnlyList<Equipment>> GetAvailableEquipmentAsync(CancellationToken cancellationToken = default) =>
+    public Task<IReadOnlyList<Equipment>> GetAvailableEquipmentAsync(
+        CancellationToken cancellationToken = default) =>
         _equipmentRepository.GetAvailableAsync(cancellationToken);
+
+    public Task<Equipment?> GetByIdAsync(
+        int id,
+        CancellationToken cancellationToken = default) =>
+        _equipmentRepository.GetByIdAsync(id, cancellationToken);
 }

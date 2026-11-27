@@ -1,28 +1,23 @@
 # Campus Equipment Borrowing System
 
-> **Current version: Laboratory Activity 4 - PostgreSQL / Npgsql**
+> **Current version: Laboratory Activity 5 - ASP.NET Core API and Avalonia client**
 >
-> The current operational application uses **PostgreSQL through EF Core and Npgsql**. It does not use the earlier SQLite database or the historical in-memory repositories described in the Activity 1-3 sections below. Those earlier sections are retained as project history and context; do not follow their old database setup or execution instructions when running the current Activity 4 version.
+> The Avalonia desktop application communicates with the ASP.NET Core API over HTTP. The API uses application services, repository interfaces, EF Core, and Npgsql to access PostgreSQL. The desktop project does not access the database directly.
 >
-> **For the current application, start with these sections and documents:**
+> **Activity 5 documents:**
+> 1. [Setup guide](docs/ACTIVITY_5_SETUP.md)
+> 2. [Guarded database reset and seed script](docs/activity5-seed-reset.sql)
+> 3. [Endpoint contract](docs/ACTIVITY_5_API_CONTRACT.md)
+> 4. [Machine-readable OpenAPI document](docs/openapi-v1.json)
+> 5. [Baseline and revision record](docs/ACTIVITY_5_BASELINE.md)
+> 6. [Architecture explanation](docs/ACTIVITY_5_ARCHITECTURE.md)
+> 7. [Traceability matrix](docs/ACTIVITY_5_TRACEABILITY.md)
+> 8. [T01-T08 verification record](docs/ACTIVITY_5_VERIFICATION.md)
 >
-> 1. [Laboratory Activity 4 - Advanced Data-Driven Workflows and PostgreSQL Integration](#laboratory-activity-4--advanced-data-driven-workflows-and-postgresql-integration)
-> 2. [PostgreSQL setup guide](docs/POSTGRESQL_SETUP.md) - prerequisites, database creation, secret-free connection configuration, migrations, startup, and troubleshooting.
-> 3. [Activity 4 use-case catalog](docs/ACTIVITY_4_USE_CASE_CATALOG.md) - the fourteen required use cases.
-> 4. [Activity 4 verification checklist](docs/ACTIVITY_4_VERIFICATION_CHECKLIST.md), [traceability matrix](docs/ACTIVITY_4_TRACEABILITY.md), and [SQL evidence guide](docs/ACTIVITY_4_SQL_EVIDENCE.md) - complete these with actual observed evidence before submission.
+> Start the API and desktop separately as described in the setup guide. The API OpenAPI document is available at `http://localhost:5080/openapi/v1.json`.
 >
-> **Current Activity 4 startup (PowerShell, from the repository root):**
->
-> ```powershell
-> dotnet tool restore
-> dotnet restore
-> dotnet build
-> dotnet run --project src\EquipmentBorrowing.Desktop\EquipmentBorrowing.Desktop.csproj
-> ```
->
-> Before running the desktop application, create the `equipment_borrowing` PostgreSQL database and set `EQUIPMENT_BORROWING_CONNECTION_STRING` in the current PowerShell session as described in [docs/POSTGRESQL_SETUP.md](docs/POSTGRESQL_SETUP.md). The application applies pending migrations during startup. The explicit `dotnet-ef database update` command is also documented in the setup guide.
->
-> **Credentials:** Never put a real PostgreSQL password or a credential-bearing connection string in this README, source control, screenshots, or the submission archive.
+> Activity 1-4 material below is retained as project history. Use the Activity 5 setup guide for the current architecture and startup instructions.
+
 
 ---
 

@@ -1,14 +1,15 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using EquipmentBorrowing.Application.Services;
+using EquipmentBorrowing.Desktop.Services;
 using EquipmentBorrowing.Domain;
 
 namespace EquipmentBorrowing.Desktop.ViewModels;
 
 public sealed partial class StudentsViewModel : ViewModelBase
 {
-    private readonly StudentManagementService _service;
+    private readonly BorrowingApiClient _api;
+
     [ObservableProperty] private Student? selectedStudent;
     [ObservableProperty] private string studentNumber = string.Empty;
     [ObservableProperty] private string fullName = string.Empty;
@@ -16,9 +17,10 @@ public sealed partial class StudentsViewModel : ViewModelBase
     [ObservableProperty] private bool isEligible = true;
     [ObservableProperty] private string statusMessage = "Register or select a student to edit.";
     [ObservableProperty] private bool isLoading;
+
     public ObservableCollection<Student> Students { get; } = [];
 
-    public StudentsViewModel(StudentManagementService service) => _service = service;
+    public StudentsViewModel(BorrowingApiClient api) => _api = api;
 
     partial void OnSelectedStudentChanged(Student? value)
     {
@@ -37,52 +39,80 @@ public sealed partial class StudentsViewModel : ViewModelBase
         try
         {
             Students.Clear();
-            foreach (var item in await _service.GetAllAsync()) Students.Add(item);
-            SelectedStudent = selectedId.HasValue ? Students.FirstOrDefault(x => x.Id == selectedId.Value) : null;
+            foreach (var item in await _api.GetStudentsAsync()) Students.Add(item);
+            SelectedStudent = selectedId.HasValue
+                ? Students.FirstOrDefault(x => x.Id == selectedId.Value)
+                : null;
         }
-        catch (Exception) { StatusMessage = "Unable to load students. Check PostgreSQL and retry."; }
-        finally { IsLoading = false; }
+        catch (Exception ex)
+        {
+            StatusMessage = $"Unable to load students from the API: {ex.GetBaseException().Message}";
+        }
+        finally
+        {
+            IsLoading = false;
+        }
     }
 
     [RelayCommand]
     private async Task RegisterAsync()
     {
-        var result = await _service.RegisterAsync(new RegisterStudentRequest(StudentNumber, FullName, ContactInformation));
-        if (result.Succeeded)
+        try
         {
+            var message = await _api.RegisterStudentAsync(
+                StudentNumber, FullName, ContactInformation);
             ClearForm();
             await LoadAsync();
-            if (StatusMessage.StartsWith("Unable to load", StringComparison.OrdinalIgnoreCase))
-                StatusMessage = result.Message + " The list refresh also failed; reconnect and refresh.";
-            else StatusMessage = result.Message;
+            StatusMessage = message;
         }
-        else StatusMessage = result.Message;
+        catch (Exception ex)
+        {
+            StatusMessage = $"Student registration failed: {ex.GetBaseException().Message}";
+        }
     }
 
     [RelayCommand]
     private async Task UpdateAsync()
     {
-        if (SelectedStudent is null) { StatusMessage = "Select a student first."; return; }
-        var result = await _service.UpdateAsync(new UpdateStudentRequest(SelectedStudent.Id, StudentNumber, FullName, ContactInformation));
-        if (result.Succeeded)
+        if (SelectedStudent is null)
         {
-            await LoadAsync();
-            if (StatusMessage.StartsWith("Unable to load", StringComparison.OrdinalIgnoreCase))
-                StatusMessage = result.Message + " The list refresh also failed; reconnect and refresh.";
-            else StatusMessage = result.Message;
+            StatusMessage = "Select a student first.";
+            return;
         }
-        else StatusMessage = result.Message;
+
+        try
+        {
+            var message = await _api.UpdateStudentAsync(
+                SelectedStudent.Id, StudentNumber, FullName, ContactInformation);
+            await LoadAsync();
+            StatusMessage = message;
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = $"Student update failed: {ex.GetBaseException().Message}";
+        }
     }
 
     [RelayCommand]
     private async Task SaveEligibilityAsync()
     {
-        if (SelectedStudent is null) { StatusMessage = "Select a student first."; return; }
-        var result = await _service.SetEligibilityAsync(SelectedStudent.Id, IsEligible);
-        await LoadAsync();
-        if (StatusMessage.StartsWith("Unable to load", StringComparison.OrdinalIgnoreCase))
-            StatusMessage = result.Message + " The list refresh also failed; reconnect and refresh.";
-        else StatusMessage = result.Message;
+        if (SelectedStudent is null)
+        {
+            StatusMessage = "Select a student first.";
+            return;
+        }
+
+        try
+        {
+            var message = await _api.SetStudentEligibilityAsync(
+                SelectedStudent.Id, IsEligible);
+            await LoadAsync();
+            StatusMessage = message;
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = $"Eligibility update failed: {ex.GetBaseException().Message}";
+        }
     }
 
     [RelayCommand]

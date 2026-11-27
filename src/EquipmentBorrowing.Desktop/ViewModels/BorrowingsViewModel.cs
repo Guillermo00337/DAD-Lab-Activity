@@ -2,14 +2,15 @@ using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using EquipmentBorrowing.Application.Services;
+using EquipmentBorrowing.Desktop.Services;
 using EquipmentBorrowing.Domain;
 
 namespace EquipmentBorrowing.Desktop.ViewModels;
 
 public sealed partial class BorrowingsViewModel : ViewModelBase
 {
-    private readonly BorrowingQueryService _queryService;
-    private readonly ReturnEquipmentService _returnService;
+    private readonly BorrowingApiClient _api;
+
     [ObservableProperty] private BorrowingHistoryItem? selectedBorrowing;
     [ObservableProperty] private string searchText = string.Empty;
     [ObservableProperty] private string statusFilter = "Active";
@@ -17,80 +18,64 @@ public sealed partial class BorrowingsViewModel : ViewModelBase
     [ObservableProperty] private bool descending = true;
     [ObservableProperty] private string statusMessage = "Showing active borrowing records.";
     [ObservableProperty] private bool isLoading;
+
     public ObservableCollection<BorrowingHistoryItem> Borrowings { get; } = [];
     public string[] StatusOptions { get; } = ["All", "Active", "Returned"];
     public string[] SortOptions { get; } = ["Checkout date", "Expected return date"];
 
-    public BorrowingsViewModel(BorrowingQueryService queryService, ReturnEquipmentService returnService)
-    {
-        _queryService = queryService;
-        _returnService = returnService;
-    }
+    public BorrowingsViewModel(BorrowingApiClient api) => _api = api;
 
     [RelayCommand]
     public async Task LoadAsync()
     {
         IsLoading = true;
-
-    try
-    {
-        var filter = Enum.TryParse<BorrowingStatusFilter>(
-            StatusFilter, true, out var parsed)
-            ? parsed
-            : BorrowingStatusFilter.Active;
-
-        var sort = SortField == "Expected return date"
-            ? BorrowingSortField.ExpectedReturnDate
-            : BorrowingSortField.CheckoutDate;
-
-        var rows = await _queryService.SearchAsync(
-            new BorrowingSearchCriteria(SearchText, filter, sort, Descending));
-
-        Borrowings.Clear();
-
-        foreach (var row in rows)
+        try
         {
-            Borrowings.Add(row);
-        }
+            var rows = await _api.SearchBorrowingsAsync(
+                SearchText, StatusFilter, SortField, Descending);
 
-        StatusMessage = rows.Count == 0
-            ? "No borrowing records match these criteria."
-            : $"Loaded {rows.Count} borrowing record(s).";
+            Borrowings.Clear();
+            foreach (var row in rows) Borrowings.Add(row);
+
+            StatusMessage = rows.Count == 0
+                ? "No borrowing records match these criteria."
+                : $"Loaded {rows.Count} borrowing record(s).";
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = $"Borrowing query failed: {ex.GetBaseException().Message}";
+        }
+        finally
+        {
+            IsLoading = false;
+        }
     }
-    catch (Exception ex)
-    {
-        StatusMessage = $"Borrowing query failed: {ex.GetBaseException().Message}";
-        System.Diagnostics.Debug.WriteLine(ex);
-    }
-    finally
-    {
-        IsLoading = false;
-    }
-}
 
     [RelayCommand]
     private async Task ReturnSelectedAsync()
     {
-        if (SelectedBorrowing is null) { StatusMessage = "Select a borrowing record."; return; }
-        if (SelectedBorrowing.Status != BorrowingStatus.Active) { StatusMessage = "Only active borrowings can be returned."; return; }
+        if (SelectedBorrowing is null)
+        {
+            StatusMessage = "Select a borrowing record.";
+            return;
+        }
+
+        if (SelectedBorrowing.Status != BorrowingStatus.Active)
+        {
+            StatusMessage = "Only active borrowings can be returned.";
+            return;
+        }
+
         try
         {
-            var result = await _returnService.ReturnAsync(new ReturnEquipmentRequest(SelectedBorrowing.BorrowingId, DateOnly.FromDateTime(DateTime.Today)));
-            await LoadAfterActionAsync(result.Message);
+            var message = await _api.ReturnAsync(SelectedBorrowing.BorrowingId);
+            await LoadAsync();
+            StatusMessage = message;
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            StatusMessage = "The return could not be confirmed. Reconnect and refresh the borrowing and equipment records before retrying.";
+            StatusMessage = $"The return could not be confirmed: {ex.Message} Refresh before retrying.";
         }
-    }
-
-    private async Task LoadAfterActionAsync(string actionMessage)
-    {
-        await LoadAsync();
-        if (StatusMessage.StartsWith("Unable to retrieve", StringComparison.OrdinalIgnoreCase))
-            StatusMessage = actionMessage + " The list refresh also failed; reconnect and refresh before retrying.";
-        else
-            StatusMessage = actionMessage;
     }
 
     [RelayCommand]
