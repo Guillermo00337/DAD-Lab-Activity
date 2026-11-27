@@ -1,16 +1,14 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using EquipmentBorrowing.Application.Services;
+using EquipmentBorrowing.Desktop.Services;
 using EquipmentBorrowing.Domain;
 
 namespace EquipmentBorrowing.Desktop.ViewModels;
 
 public sealed partial class EquipmentViewModel : ViewModelBase
 {
-    private readonly EquipmentCatalogService _equipmentCatalog;
-    private readonly StudentCatalogService _studentCatalog;
-    private readonly BorrowEquipmentService _borrowService;
+    private readonly BorrowingApiClient _api;
 
     [ObservableProperty] private Student? selectedStudent;
     [ObservableProperty] private Equipment? selectedEquipment;
@@ -23,12 +21,7 @@ public sealed partial class EquipmentViewModel : ViewModelBase
     public ObservableCollection<Equipment> AvailableEquipment { get; } = [];
     public ObservableCollection<EquipmentChoice> MultiItemChoices { get; } = [];
 
-    public EquipmentViewModel(EquipmentCatalogService equipmentCatalog, StudentCatalogService studentCatalog, BorrowEquipmentService borrowService)
-    {
-        _equipmentCatalog = equipmentCatalog;
-        _studentCatalog = studentCatalog;
-        _borrowService = borrowService;
-    }
+    public EquipmentViewModel(BorrowingApiClient api) => _api = api;
 
     [RelayCommand]
     public async Task LoadAsync()
@@ -39,63 +32,91 @@ public sealed partial class EquipmentViewModel : ViewModelBase
         try
         {
             Students.Clear();
-            foreach (Student item in await _studentCatalog.GetStudentsAsync()) Students.Add(item);
+            foreach (var item in await _api.GetStudentsAsync()) Students.Add(item);
+
             EquipmentItems.Clear();
             AvailableEquipment.Clear();
             MultiItemChoices.Clear();
-            IReadOnlyList<Equipment> allEquipment = await _equipmentCatalog.GetEquipmentAsync();
-            IReadOnlyList<Equipment> availableEquipment = await _equipmentCatalog.GetAvailableEquipmentAsync();
-            foreach (Equipment item in allEquipment)
+
+            var allEquipment = await _api.GetEquipmentAsync();
+            var availableEquipment = await _api.GetEquipmentAsync(availableOnly: true);
+
+            foreach (var item in allEquipment)
             {
                 EquipmentItems.Add(item);
                 MultiItemChoices.Add(new EquipmentChoice(item));
             }
-            foreach (Equipment item in availableEquipment) AvailableEquipment.Add(item);
-            SelectedStudent = selectedStudentId.HasValue ? Students.FirstOrDefault(x => x.Id == selectedStudentId.Value) : null;
-            SelectedEquipment = selectedEquipmentId.HasValue ? AvailableEquipment.FirstOrDefault(x => x.Id == selectedEquipmentId.Value) : null;
+            foreach (var item in availableEquipment) AvailableEquipment.Add(item);
+
+            SelectedStudent = selectedStudentId.HasValue
+                ? Students.FirstOrDefault(x => x.Id == selectedStudentId.Value)
+                : null;
+            SelectedEquipment = selectedEquipmentId.HasValue
+                ? AvailableEquipment.FirstOrDefault(x => x.Id == selectedEquipmentId.Value)
+                : null;
+
             StatusMessage = $"Loaded {EquipmentItems.Count} equipment records; {AvailableEquipment.Count} are available.";
         }
         catch (Exception)
         {
-            StatusMessage = "Unable to load the catalog. Check PostgreSQL and choose Refresh to retry.";
+            StatusMessage = "Unable to load the catalog from the API. Check the API connection and choose Refresh to retry.";
         }
-        finally { IsLoading = false; }
+        finally
+        {
+            IsLoading = false;
+        }
     }
 
     [RelayCommand]
     private async Task BorrowAsync()
     {
-        if (!TryGetDates(out DateOnly checkout, out DateOnly due)) return;
+        if (!TryGetDueDate(out var due)) return;
+
         if (SelectedStudent is null || SelectedEquipment is null)
         {
             StatusMessage = "Select a student and one equipment item.";
             return;
         }
+
         if (!SelectedEquipment.IsAvailable)
         {
             StatusMessage = "The selected equipment is not available.";
             return;
         }
+
         try
         {
-            var result = await _borrowService.BorrowAsync(new BorrowEquipmentRequest(SelectedStudent.Id, SelectedEquipment.Id, checkout, due));
-            await RefreshAfterOperationAsync(result.Message);
+            var message = await _api.BorrowAsync(SelectedStudent.Id, SelectedEquipment.Id, due);
+            await RefreshAfterOperationAsync(message);
         }
-        catch (Exception) { StatusMessage = "Borrowing failed. Refresh and verify the database before retrying."; }
+        catch (Exception ex)
+        {
+            StatusMessage = $"Borrowing failed: {ex.Message} Refresh and verify the borrowing before retrying.";
+        }
     }
 
     [RelayCommand]
     private async Task BorrowMultipleAsync()
     {
-        if (!TryGetDates(out DateOnly checkout, out DateOnly due)) return;
-        if (SelectedStudent is null) { StatusMessage = "Select a student."; return; }
-        int[] ids = MultiItemChoices.Where(x => x.IsSelected).Select(x => x.Id).ToArray();
+        if (!TryGetDueDate(out var due)) return;
+
+        if (SelectedStudent is null)
+        {
+            StatusMessage = "Select a student.";
+            return;
+        }
+
+        var ids = MultiItemChoices.Where(x => x.IsSelected).Select(x => x.Id).ToArray();
+
         try
         {
-            CheckoutResult result = await _borrowService.BorrowMultipleAsync(SelectedStudent.Id, ids, checkout, due);
-            await RefreshAfterOperationAsync(result.Message);
+            var message = await _api.BorrowMultipleAsync(SelectedStudent.Id, ids, due);
+            await RefreshAfterOperationAsync(message);
         }
-        catch (Exception) { StatusMessage = "Multi-item checkout failed. Reconnect and refresh before deciding whether to retry."; }
+        catch (Exception ex)
+        {
+            StatusMessage = $"Multi-item checkout failed: {ex.Message} Reconnect and refresh before deciding whether to retry.";
+        }
     }
 
     private async Task RefreshAfterOperationAsync(string operationMessage)
@@ -107,21 +128,22 @@ public sealed partial class EquipmentViewModel : ViewModelBase
             StatusMessage = operationMessage;
     }
 
-    private bool TryGetDates(out DateOnly checkout, out DateOnly due)
+    private bool TryGetDueDate(out DateOnly due)
     {
-        checkout = DateOnly.FromDateTime(DateTime.Today);
         due = default;
         if (ExpectedReturnDate is null)
         {
             StatusMessage = "Choose an expected return date.";
             return false;
         }
+
         due = DateOnly.FromDateTime(ExpectedReturnDate.Value.DateTime);
-        if (due <= checkout)
+        if (due <= DateOnly.FromDateTime(DateTime.Today))
         {
             StatusMessage = "Expected return date must be later than today.";
             return false;
         }
+
         return true;
     }
 }

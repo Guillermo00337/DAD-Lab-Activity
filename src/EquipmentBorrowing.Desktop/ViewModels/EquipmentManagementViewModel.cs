@@ -1,23 +1,25 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using EquipmentBorrowing.Application.Services;
+using EquipmentBorrowing.Desktop.Services;
 using EquipmentBorrowing.Domain;
 
 namespace EquipmentBorrowing.Desktop.ViewModels;
 
 public sealed partial class EquipmentManagementViewModel : ViewModelBase
 {
-    private readonly EquipmentManagementService _service;
+    private readonly BorrowingApiClient _api;
+
     [ObservableProperty] private Equipment? selectedEquipment;
     [ObservableProperty] private string identifier = string.Empty;
     [ObservableProperty] private string name = string.Empty;
     [ObservableProperty] private string description = string.Empty;
     [ObservableProperty] private string statusMessage = "Register or select equipment to edit its descriptive information.";
     [ObservableProperty] private bool isLoading;
+
     public ObservableCollection<Equipment> EquipmentItems { get; } = [];
 
-    public EquipmentManagementViewModel(EquipmentManagementService service) => _service = service;
+    public EquipmentManagementViewModel(BorrowingApiClient api) => _api = api;
 
     partial void OnSelectedEquipmentChanged(Equipment? value)
     {
@@ -35,41 +37,57 @@ public sealed partial class EquipmentManagementViewModel : ViewModelBase
         try
         {
             EquipmentItems.Clear();
-            foreach (var item in await _service.GetAllAsync()) EquipmentItems.Add(item);
-            SelectedEquipment = selectedId.HasValue ? EquipmentItems.FirstOrDefault(x => x.Id == selectedId.Value) : null;
+            foreach (var item in await _api.GetEquipmentAsync()) EquipmentItems.Add(item);
+            SelectedEquipment = selectedId.HasValue
+                ? EquipmentItems.FirstOrDefault(x => x.Id == selectedId.Value)
+                : null;
         }
-        catch (Exception) { StatusMessage = "Unable to load equipment. Check PostgreSQL and retry."; }
-        finally { IsLoading = false; }
+        catch (Exception ex)
+        {
+            StatusMessage = $"Unable to load equipment from the API: {ex.GetBaseException().Message}";
+        }
+        finally
+        {
+            IsLoading = false;
+        }
     }
 
     [RelayCommand]
     private async Task RegisterAsync()
     {
-        var result = await _service.RegisterAsync(new RegisterEquipmentRequest(Identifier, Name, Description));
-        if (result.Succeeded)
+        try
         {
+            var message = await _api.RegisterEquipmentAsync(Identifier, Name, Description);
             ClearForm();
             await LoadAsync();
-            if (StatusMessage.StartsWith("Unable to load", StringComparison.OrdinalIgnoreCase))
-                StatusMessage = result.Message + " The list refresh also failed; reconnect and refresh.";
-            else StatusMessage = result.Message;
+            StatusMessage = message;
         }
-        else StatusMessage = result.Message;
+        catch (Exception ex)
+        {
+            StatusMessage = $"Equipment registration failed: {ex.GetBaseException().Message}";
+        }
     }
 
     [RelayCommand]
     private async Task UpdateAsync()
     {
-        if (SelectedEquipment is null) { StatusMessage = "Select equipment first."; return; }
-        var result = await _service.UpdateAsync(new UpdateEquipmentRequest(SelectedEquipment.Id, Identifier, Name, Description));
-        if (result.Succeeded)
+        if (SelectedEquipment is null)
         {
-            await LoadAsync();
-            if (StatusMessage.StartsWith("Unable to load", StringComparison.OrdinalIgnoreCase))
-                StatusMessage = result.Message + " The list refresh also failed; reconnect and refresh.";
-            else StatusMessage = result.Message;
+            StatusMessage = "Select equipment first.";
+            return;
         }
-        else StatusMessage = result.Message;
+
+        try
+        {
+            var message = await _api.UpdateEquipmentAsync(
+                SelectedEquipment.Id, Identifier, Name, Description);
+            await LoadAsync();
+            StatusMessage = message;
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = $"Equipment update failed: {ex.GetBaseException().Message}";
+        }
     }
 
     [RelayCommand]
